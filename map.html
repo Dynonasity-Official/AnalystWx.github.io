@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>AnalystWX Map</title>
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <!-- Leaflet JS -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Map container -->
+<div id="map"></div>
+
+<script>
+    // Initialize map at USA center
+    const map = L.map('map').setView([39, -97], 4);
+
+    // Add MapTiler tiles
+    L.tileLayer(
+      'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=YOUR_API_KEY',
+      {
+        tileSize: 512,
+        zoomOffset: -1,
+        maxZoom: 18
+      }
+    ).addTo(map);
+</script>
+
+</body>
+</html>
