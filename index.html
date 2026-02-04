@@ -4,6 +4,25 @@
     <meta charset="utf-8" />
     <title>AnalystWx</title>
 </head>
+
+<head>
+    <style>
+        .blue-button {
+            background-color: #1E90FF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .blue-button:hover {
+            background-color: #187bcd; /* darker on hover */
+        }
+    </style>
+</head>
+
 <body>
 
     <!-- style -->
@@ -12,7 +31,8 @@
     <h2>AnalystWX</h2>
 
     <!-- buttons -->
-    <button onclick="CompositeReflectivityFunction()">CompositeReflectivity</button>
+    <button class="blue-button" onclick="CompositeReflectivityFunction()">CompositeReflectivity</button>
+
     </div>
 
 <!-- scripts -->
