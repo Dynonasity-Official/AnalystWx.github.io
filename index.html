@@ -81,7 +81,20 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Initialize the map
+        // Initialize the map FIRST
+        const map = L.map('map').setView([37.0902, -95.7129], 4); // Centered on USA
+
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+        // Add OpenStreetMap tile layer (completely free)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© OpenStreetMap contributors',
+            -maxZoom: 19
+        }).addTo(map);
+
+        const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png');
+        satellite.addTo(map);
+        boundaries.addTo(map);
 
 
         
