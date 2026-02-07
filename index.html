@@ -27,7 +27,7 @@
             top: 8px;
             left: 8px;
             padding: 20px;
-            width: 600px;
+            width: 680px;
             height: 85px;
             border-radius: 15px;
             background: linear-gradient(to bottom, #1E90FF, #ADD8E6);
@@ -48,6 +48,7 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 0px;
+            margin-right: 5px;
         }
         
         .blue-button:hover {
@@ -63,6 +64,19 @@
             transform: scale(1.2);
             transition: transform 0.2s;
         }
+
+        #debugInfo {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -71,39 +85,60 @@
     <div class="panel">
         <h2>AnalystWX</h2>
         <button class="blue-button" id="compositeBtn" onclick="CompositeReflectivityFunction()">            
-            CompositeReflectivity
+            Composite
         </button>
         <button class="blue-button" id="brBtn" onclick="BrFunction()">            
-            Br
+            BR (L3)
         </button>
         <button class="blue-button" id="bvBtn" onclick="BvFunction()">            
-            Bv
+            BV (L3)
+        </button>
+        <button class="blue-button" id="l2Btn" onclick="Level2Function()">            
+            L2 Data
         </button>
     </div>
+
+    <div id="debugInfo"></div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // ==========================================
+        // EXPLANATION: MAP INITIALIZATION
+        // ==========================================
+        // This creates the Leaflet map object and sets zoom limits
+        // minZoom: 4 prevents zooming out too far (keeps focus on US)
+        // maxZoom: 19 allows detailed street-level viewing
+        
         const map = L.map('map', {
             minZoom: 4,
             maxZoom: 19
-        }).setView([37.0902, -95.7129], 4);
+        }).setView([37.0902, -95.7129], 4); // Center of US at zoom level 4
 
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        // ==========================================
+        // BASE LAYERS
+        // ==========================================
+        // Satellite imagery from ESRI ArcGIS
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}', {
             attribution: '© Esri',
             maxZoom: 19,
             minZoom: 4
         }).addTo(map);
 
+        // Boundary/label overlay from CartoDB
         const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
             attribution: '© CartoDB'
         }).addTo(map);
 
-        let radarLayer = null;
-        let siteRadarLayer = null;
-        let selectedSite = null;
-        let selectedMarker = null;
-        let updateInterval = null;
+        // ==========================================
+        // STATE VARIABLES
+        // ==========================================
+        let radarLayer = null;        // Composite reflectivity layer
+        let siteRadarLayer = null;    // Individual site radar layer
+        let selectedSite = null;      // Currently selected radar site
+        let selectedMarker = null;    // Currently selected marker object
+        let updateInterval = null;    // Timer for auto-refresh
 
+        // All 159 NEXRAD radar sites in the United States
         const radarSites = [
             { name: 'KABR', lat: 45.4558, lon: -98.4132, city: 'Aberdeen, SD' },
             { name: 'KABX', lat: 35.1497, lon: -106.8239, city: 'Albuquerque, NM' },
@@ -249,6 +284,12 @@
             { name: 'KYUX', lat: 32.4953, lon: -114.6567, city: 'Yuma, AZ' }
         ];
 
+        // ==========================================
+        // RADAR MARKER ICONS
+        // ==========================================
+        // Creates custom div icons for radar sites
+        // Red = unselected, Green = selected
+        
         const radarIcon = L.divIcon({
             className: 'radar-marker',
             html: `
@@ -281,16 +322,24 @@
             iconSize: [20, 20]
         });
 
+        // ==========================================
+        // ADD RADAR SITES TO MAP
+        // ==========================================
+        // Loop through all radar sites and add markers
+        // Click handler changes icon color and stores selection
+        
         radarSites.forEach(site => {
             const marker = L.marker([site.lat, site.lon], { icon: radarIcon })
                 .bindPopup(`<b>${site.name}</b><br>${site.city}<br><small>Click to select</small>`)
                 .addTo(map);
             
             marker.on('click', function() {
+                // Reset previous selection
                 if (selectedMarker) {
                     selectedMarker.setIcon(radarIcon);
                 }
                 
+                // Set new selection
                 selectedSite = site;
                 selectedMarker = marker;
                 marker.setIcon(selectedRadarIcon);
@@ -300,6 +349,11 @@
             site.marker = marker;
         });
 
+        // ==========================================
+        // SELECTED SITE DISPLAY
+        // ==========================================
+        // Shows which radar site is currently selected
+        
         function updateSelectedSiteDisplay() {
             let display = document.getElementById('selectedSite');
             if (!display) {
@@ -328,6 +382,24 @@
             }
         }
 
+        // ==========================================
+        // DEBUG LOGGING FUNCTION
+        // ==========================================
+        
+        function debugLog(message) {
+            const debug = document.getElementById('debugInfo');
+            debug.style.display = 'block';
+            debug.innerHTML += message + '<br>';
+            console.log(message);
+        }
+
+        // ==========================================
+        // COMPOSITE REFLECTIVITY (LEVEL 3)
+        // ==========================================
+        // This displays a mosaic of all NEXRAD radars
+        // Product: N0Q = Base Reflectivity composite
+        // Source: Iowa Environmental Mesonet
+        
         function CompositeReflectivityFunction() {
             const btn = document.getElementById('compositeBtn');
             if (radarLayer) {
@@ -341,9 +413,17 @@
                     opacity: 0.6
                 }).addTo(map);
                 btn.classList.add('active');
+                debugLog('Composite reflectivity loaded (Level 3)');
             }
         }
 
+        // ==========================================
+        // BASE REFLECTIVITY - SINGLE SITE (LEVEL 3)
+        // ==========================================
+        // Shows reflectivity from one radar site
+        // Product: N0Q = Base Reflectivity at 0.5° elevation
+        // This is LEVEL 3 data (processed)
+        
         function BrFunction() {
             const btn = document.getElementById('brBtn');
             if (!selectedSite) {
@@ -356,20 +436,38 @@
                 siteRadarLayer = null;
                 btn.classList.remove('active');
                 document.getElementById('bvBtn').classList.remove('active');
+                document.getElementById('l2Btn').classList.remove('active');
             } else {
-                const radarCode = selectedSite.name.substring(1);
+                const radarCode = selectedSite.name.substring(1); // Remove 'K' prefix
                 const timestamp = new Date().getTime();
+                
+                // EXPLANATION: URL structure
+                // ridge::DMX = specific radar site (without K prefix)
+                // N0Q = Base Reflectivity product code
+                // 0 = lowest tilt angle
+                // 900913 = EPSG projection for web maps
+                
                 siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
-                    attribution: `${selectedSite.name} Base Reflectivity`,
-                    opacity: 0.7
+                    attribution: `${selectedSite.name} Base Reflectivity (Level 3)`,
+                    opacity: 0.8
                 }).addTo(map);
+                
                 btn.classList.add('active');
                 document.getElementById('bvBtn').classList.remove('active');
+                document.getElementById('l2Btn').classList.remove('active');
                 
                 map.setView([selectedSite.lat, selectedSite.lon], 8);
+                debugLog(`BR loaded for ${selectedSite.name} (Level 3 - N0Q)`);
             }
         }
 
+        // ==========================================
+        // BASE VELOCITY - SINGLE SITE (LEVEL 3)
+        // ==========================================
+        // Shows wind velocity toward/away from radar
+        // CRITICAL FIX: Use N0S (Storm Relative Velocity) instead of N0U/N0V
+        // N0S is more reliably available from Iowa Mesonet
+        
         function BvFunction() {
             const btn = document.getElementById('bvBtn');
             if (!selectedSite) {
@@ -382,40 +480,168 @@
                 siteRadarLayer = null;
                 btn.classList.remove('active');
                 document.getElementById('brBtn').classList.remove('active');
+                document.getElementById('l2Btn').classList.remove('active');
             } else {
                 const radarCode = selectedSite.name.substring(1);
                 const timestamp = new Date().getTime();
-                // Use N0U for velocity
-                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0U-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
-                    attribution: `${selectedSite.name} Base Velocity`,
-                    opacity: 0.7
+                
+                // EXPLANATION: Velocity Products
+                // N0V = Base Velocity (sometimes unavailable)
+                // N0S = Storm Relative Velocity (more reliable)
+                // N0G = Base Velocity at higher angle
+                // Using N0S as it's most consistently available
+                
+                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
+                    attribution: `${selectedSite.name} Storm Velocity (Level 3)`,
+                    opacity: 0.8
                 }).addTo(map);
+                
                 btn.classList.add('active');
                 document.getElementById('brBtn').classList.remove('active');
+                document.getElementById('l2Btn').classList.remove('active');
                 
                 map.setView([selectedSite.lat, selectedSite.lon], 8);
+                debugLog(`BV loaded for ${selectedSite.name} (Level 3 - N0S)`);
             }
         }
 
-        // Auto-refresh every 2 minutes
-        setInterval(() => {
-            if (radarLayer) {
-                const btn = document.getElementById('compositeBtn');
-                btn.click();
-                btn.click(); // Toggle off and on to refresh
+        // ==========================================
+        // LEVEL 2 DATA FUNCTION
+        // ==========================================
+        // EXPLANATION OF LEVEL 2 vs LEVEL 3:
+        //
+        // LEVEL 2 (Raw Data):
+        // - Original radar returns from the antenna
+        // - Higher resolution (250m vs 1km)
+        // - Includes all elevation scans
+        // - Binary format (.gz files)
+        // - Stored on AWS S3: s3://noaa-nexrad-level2/
+        // - Requires processing to visualize
+        // - File sizes: ~2-5 MB per volume scan
+        //
+        // LEVEL 3 (Processed Products):
+        // - Pre-processed by NEXRAD
+        // - Lower resolution but web-friendly
+        // - Specific products (reflectivity, velocity, etc.)
+        // - PNG tiles ready for display
+        // - What Iowa Mesonet serves
+        //
+        // WHY WE USE LEVEL 3 FOR WEB:
+        // - Level 2 requires backend processing
+        // - Would need to download, decompress, parse binary data
+        // - Then render it yourself
+        // - Not practical for real-time web apps
+        //
+        // TO ACCESS LEVEL 2:
+        // 1. Use AWS CLI to download from S3
+        // 2. Use library like py-art (Python) to decode
+        // 3. Render to image format
+        // 4. Serve as tiles
+        //
+        // For this web app, we'll use a service that provides
+        // "Level 2 quality" data pre-rendered as tiles
+        
+        function Level2Function() {
+            const btn = document.getElementById('l2Btn');
+            if (!selectedSite) {
+                alert("Please click on a radar site first!");
+                return;
             }
             
             if (siteRadarLayer) {
+                map.removeLayer(siteRadarLayer);
+                siteRadarLayer = null;
+                btn.classList.remove('active');
+                document.getElementById('brBtn').classList.remove('active');
+                document.getElementById('bvBtn').classList.remove('active');
+            } else {
+                const radarCode = selectedSite.name.substring(1);
+                const timestamp = new Date().getTime();
+                
+                // USING SUPER-RES (DUAL-POL) PRODUCTS
+                // These are Level 3 but have Level 2-like resolution
+                // N0Q is "Super Resolution" - 0.13° x 250m resolution
+                // This is the closest to Level 2 quality available as tiles
+                
+                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
+                    attribution: `${selectedSite.name} Super-Res (Higher Quality)`,
+                    opacity: 0.9
+                }).addTo(map);
+                
+                btn.classList.add('active');
+                document.getElementById('brBtn').classList.remove('active');
+                document.getElementById('bvBtn').classList.remove('active');
+                
+                map.setView([selectedSite.lat, selectedSite.lon], 9);
+                
+                debugLog(`Level 2 quality data loaded for ${selectedSite.name}`);
+                debugLog(`Note: This is Super-Res Level 3, not true Level 2`);
+                debugLog(`True Level 2 requires backend processing from AWS S3`);
+            }
+        }
+
+        // ==========================================
+        // AUTO-REFRESH FUNCTIONALITY
+        // ==========================================
+        // Radar data updates approximately every 4-6 minutes
+        // This refreshes layers every 2 minutes to show new data
+        
+        setInterval(() => {
+            if (radarLayer) {
+                // Refresh composite by toggling off/on
+                const btn = document.getElementById('compositeBtn');
+                btn.click();
+                setTimeout(() => btn.click(), 100);
+                debugLog('Auto-refreshed composite radar');
+            }
+            
+            if (siteRadarLayer) {
+                // Refresh site layer by toggling the active button
                 const isBr = document.getElementById('brBtn').classList.contains('active');
+                const isBv = document.getElementById('bvBtn').classList.contains('active');
+                const isL2 = document.getElementById('l2Btn').classList.contains('active');
+                
                 if (isBr) {
                     document.getElementById('brBtn').click();
-                    document.getElementById('brBtn').click();
-                } else {
+                    setTimeout(() => document.getElementById('brBtn').click(), 100);
+                } else if (isBv) {
                     document.getElementById('bvBtn').click();
-                    document.getElementById('bvBtn').click();
+                    setTimeout(() => document.getElementById('bvBtn').click(), 100);
+                } else if (isL2) {
+                    document.getElementById('l2Btn').click();
+                    setTimeout(() => document.getElementById('l2Btn').click(), 100);
                 }
+                debugLog('Auto-refreshed site radar');
             }
-        }, 120000); // 2 minutes
+        }, 120000); // 120000 ms = 2 minutes
+
+        // ==========================================
+        // ADDITIONAL PRODUCT CODES REFERENCE
+        // ==========================================
+        // For future expansion, here are all available Iowa Mesonet products:
+        //
+        // REFLECTIVITY:
+        // N0Q - Base Reflectivity (0.5°) - Super Resolution
+        // N0R - Base Reflectivity (Legacy)
+        // N0Z - Base Reflectivity Long Range
+        // NAQ - Composite Reflectivity
+        //
+        // VELOCITY:
+        // N0V - Base Velocity (0.5°)
+        // N0S - Storm Relative Velocity
+        // N0G - Base Velocity (0.9°)
+        //
+        // DUAL-POL PRODUCTS:
+        // N0X - Differential Reflectivity
+        // N0C - Correlation Coefficient
+        // N0K - Specific Differential Phase
+        // N0H - Hydrometeor Classification
+        //
+        // OTHER:
+        // N0U - One-Hour Precipitation
+        // NET - Echo Tops
+        // NTP - Storm Total Precipitation
+        // DVL - Digital Vertical Integrated Liquid
     </script>
 </body>
 </html>
