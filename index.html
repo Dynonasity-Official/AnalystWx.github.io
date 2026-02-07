@@ -28,8 +28,8 @@
         /* Panel positioned above the map */
         .panel {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 15px;
             padding: 20px;
             width: 600px;
             height: 85px;
@@ -86,7 +86,7 @@
         // Add satellite imagery
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: '© Esri',
-            maxZoom: 19
+            maxZoom: 9
         }).addTo(map);
         
         // Add boundaries/labels
