@@ -81,28 +81,69 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Initialize the map
-        const map = L.map('map').setView([37.0902, -95.7129], 4);
-        
-        // Add satellite imagery
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri',
-            maxZoom: 1
-        }).addTo(map);
-        
-        // Add boundaries/labels
-        const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-            attribution: '© CartoDB'
-        }).addTo(map);
-        
-        function CompositeReflectivityFunction() {
-            alert("CompositeReflectivity Loading...");
+const map = L.map('map').setView([37.0902, -95.7129], 4);
+
+// Add satellite imagery
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '© Esri',
+    maxZoom: 19
+}).addTo(map);
+
+// Add boundaries/labels
+const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
+    attribution: '© CartoDB'
+}).addTo(map);
+
+// NEXRAD Composite Reflectivity from Iowa Mesonet
+let radarLayer = null;
+
+// Some major NEXRAD radar sites
+const radarSites = [
+    { name: 'KDMX', lat: 41.7311, lon: -93.7229, city: 'Des Moines, IA' },
+    { name: 'KOKX', lat: 40.8656, lon: -72.8639, city: 'New York, NY' },
+    { name: 'KLOT', lat: 41.6044, lon: -88.0844, city: 'Chicago, IL' },
+    { name: 'KDFW', lat: 32.5731, lon: -97.3031, city: 'Dallas, TX' },
+    { name: 'KLSX', lat: 38.6989, lon: -90.6828, city: 'St. Louis, MO' },
+    { name: 'KATX', lat: 48.1947, lon: -122.4956, city: 'Seattle, WA' },
+    { name: 'KMUX', lat: 37.1550, lon: -121.8983, city: 'San Francisco, CA' },
+    { name: 'KMIA', lat: 25.6111, lon: -80.4128, city: 'Miami, FL' },
+    { name: 'KBMX', lat: 33.1722, lon: -86.7697, city: 'Birmingham, AL' },
+    { name: 'KDEN', lat: 39.7867, lon: -104.5458, city: 'Denver, CO' }
+];
+
+// Radar site icon
+const radarIcon = L.divIcon({
+    className: 'radar-marker',
+    html: '<div style="background-color: #FF0000; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white;"></div>',
+    iconSize: [10, 10]
+});
+
+// Add radar sites to map
+    radarSites.forEach(site => {
+    L.marker([site.lat, site.lon], { icon: radarIcon })
+        .bindPopup(`<b>${site.name}</b><br>${site.city}`)
+        .addTo(map);
+    });
+
+    function CompositeReflectivityFunction() {
+        if (radarLayer) {
+            map.removeLayer(radarLayer);
+            radarLayer = null;
+        } else {
+            radarLayer = L.tileLayer('https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png', {
+             attribution: 'NEXRAD via Iowa Environmental Mesonet',
+             opacity: 0.6
+            }).addTo(map);
         }
-        function BrFunction() {
-            alert("Br Loading...");
-        }
-        function BvFunction() {
-            alert("Bv Loading...");
-        }
+    }
+
+    function BrFunction() {
+        alert("Br Loading...");
+    }
+
+    function BvFunction() {
+        alert("Bv Loading...");
+    }
     </script>
 </body>
 </html>
