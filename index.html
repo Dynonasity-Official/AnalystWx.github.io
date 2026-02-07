@@ -37,8 +37,6 @@
 
         .panel {
             position: fixed;
-            top: 700px;
-            left: 300px;
             padding: 20px;
             width: 600px;
             height: 85px;
@@ -48,6 +46,12 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         
+        .panel .box {
+            position: absolute;  /* relative to nearest positioned parent (.panel) */
+            top: 100%;            /* 50% down from top */
+            left: 50%;           /* 50% from left */
+            transform: translate(-50%, -50%); /* center it exactly */
+        }
         h2 {
             margin-top: 0px;
         }
