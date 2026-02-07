@@ -83,10 +83,6 @@
         // Initialize the map
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
-        const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png');
-
-        satellite.addTo(map);
-        boundaries.addTo(map);
 
         
         // Add OpenStreetMap tile layer (completely free)
@@ -95,7 +91,11 @@
             maxZoom: 19
         }).addTo(map);
         
+        
+        const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png');
 
+        satellite.addTo(map);
+        boundaries.addTo(map);
 
         function CompositeReflectivityFunction() {
             alert("CompositeReflectivity Loading...");
