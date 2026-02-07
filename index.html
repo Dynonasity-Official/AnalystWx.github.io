@@ -85,13 +85,13 @@
     <script>
         const map = L.map('map', {
             minZoom: 2,
-            maxZoom: 14
+            maxZoom: 20
         }).setView([37.0902, -95.7129], 4);
 
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: '© Esri',
-            maxZoom: 19,
-            minZoom: 4
+            maxZoom: 20,
+            minZoom: 2
         }).addTo(map);
 
         const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
@@ -103,7 +103,7 @@
             .then(res => res.json())
             .then(data => {
                 L.geoJSON(data, {
-                    style: { color: 'red', weight: 2, fillOpacity: 0 }
+                    style: { color: 'grey', weight: 2, fillOpacity: 0 }
                 }).addTo(map);
             });
 
@@ -347,7 +347,7 @@
                 const timestamp = new Date().getTime();
                 radarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
                     attribution: 'NEXRAD via Iowa Environmental Mesonet',
-                    opacity: 0.6
+                    opacity: 1
                 }).addTo(map);
                 btn.classList.add('active');
             }
