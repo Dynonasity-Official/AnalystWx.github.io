@@ -37,11 +37,11 @@
 
         .panel {
             position: fixed;
-            bottom: 10px;
+            bottom: 5px;
             left: 540px;
             padding: 20px;
             width: 600px;
-            height: 85px;
+            height: 35px;
             border-radius: 15px;
             background: linear-gradient(to bottom, #1E90FF, #ADD8E6);
             z-index: 1000;
@@ -328,23 +328,6 @@
 
         function updateSelectedSiteDisplay() {
             let display = document.getElementById('selectedSite');
-            if (!display) {
-                display = document.createElement('div');
-                display.id = 'selectedSite';
-                display.style.cssText = `
-                    position: fixed;
-                    top: 115px;
-                    left: 8px;
-                    padding: 10px 15px;
-                    background: white;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                    z-index: 1000;
-                    font-size: 14px;
-                    font-weight: 600;
-                `;
-                document.body.appendChild(display);
-            }
             
             if (selectedSite) {
                 display.innerHTML = `<strong>Selected:</strong> ${selectedSite.name} - ${selectedSite.city}`;
