@@ -309,7 +309,6 @@
 
         radarSites.forEach(site => {
             const marker = L.marker([site.lat, site.lon], { icon: radarIcon })
-                .bindPopup(`<b>${site.name}</b><br>${site.city}<br><small>Click to select</small>`)
                 .addTo(map);
             
             marker.on('click', function() {
@@ -328,6 +327,23 @@
 
         function updateSelectedSiteDisplay() {
             let display = document.getElementById('selectedSite');
+            if (!display) {
+                display = document.createElement('div');
+                display.id = 'selectedSite';
+                display.style.cssText = `
+                    position: fixed;
+                    top: 115px;
+                    left: 8px;
+                    padding: 10px 15px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    font-size: 14px;
+                    font-weight: 600;
+                `;
+                document.body.appendChild(display);
+            }
             
             if (selectedSite) {
                 display.innerHTML = `<strong>Selected:</strong> ${selectedSite.name} - ${selectedSite.city}`;
