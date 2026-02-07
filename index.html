@@ -27,7 +27,7 @@
             top: 8px;
             left: 8px;
             padding: 20px;
-            width: 680px;
+            width: 600px;
             height: 85px;
             border-radius: 15px;
             background: linear-gradient(to bottom, #1E90FF, #ADD8E6);
@@ -48,7 +48,6 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 0px;
-            margin-right: 5px;
         }
         
         .blue-button:hover {
@@ -64,19 +63,6 @@
             transform: scale(1.2);
             transition: transform 0.2s;
         }
-
-        #debugInfo {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            max-width: 300px;
-            z-index: 1000;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -85,27 +71,27 @@
     <div class="panel">
         <h2>AnalystWX</h2>
         <button class="blue-button" id="compositeBtn" onclick="CompositeReflectivityFunction()">            
-            Composite
+            CompositeReflectivity
         </button>
         <button class="blue-button" id="brBtn" onclick="BrFunction()">            
-            BR (L3)
+            Br
         </button>
         <button class="blue-button" id="bvBtn" onclick="BvFunction()">            
-            BV (L3)
-        </button>
-        <button class="blue-button" id="l2Btn" onclick="Level2Function()">            
-            L2 Data
+            Bv
         </button>
     </div>
-
-    <div id="debugInfo"></div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map', { minZoom: 4, maxZoom: 19 }).setView([37.0902, -95.7129], 4);
+        const map = L.map('map', {
+            minZoom: 4,
+            maxZoom: 19
+        }).setView([37.0902, -95.7129], 4);
 
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}', {
-            attribution: '© Esri', maxZoom: 19, minZoom: 4
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri',
+            maxZoom: 19,
+            minZoom: 4
         }).addTo(map);
 
         const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
@@ -116,24 +102,182 @@
         let siteRadarLayer = null;
         let selectedSite = null;
         let selectedMarker = null;
+        let updateInterval = null;
 
-        // Radar sites (truncated for brevity)
         const radarSites = [
             { name: 'KABR', lat: 45.4558, lon: -98.4132, city: 'Aberdeen, SD' },
             { name: 'KABX', lat: 35.1497, lon: -106.8239, city: 'Albuquerque, NM' },
-            { name: 'KAKQ', lat: 36.9840, lon: -77.0075, city: 'Norfolk, VA' }
-            // ... add the rest
+            { name: 'KAKQ', lat: 36.9840, lon: -77.0075, city: 'Norfolk, VA' },
+            { name: 'KAMA', lat: 35.2334, lon: -101.7092, city: 'Amarillo, TX' },
+            { name: 'KAMX', lat: 25.6111, lon: -80.4128, city: 'Miami, FL' },
+            { name: 'KAPX', lat: 44.9071, lon: -84.7197, city: 'Gaylord, MI' },
+            { name: 'KARX', lat: 43.8228, lon: -91.1914, city: 'La Crosse, WI' },
+            { name: 'KATX', lat: 48.1947, lon: -122.4956, city: 'Seattle, WA' },
+            { name: 'KBBX', lat: 39.4961, lon: -121.6317, city: 'Beale AFB, CA' },
+            { name: 'KBGM', lat: 42.1997, lon: -75.9847, city: 'Binghamton, NY' },
+            { name: 'KBHX', lat: 40.4986, lon: -124.2919, city: 'Eureka, CA' },
+            { name: 'KBIS', lat: 46.7709, lon: -100.7606, city: 'Bismarck, ND' },
+            { name: 'KBLX', lat: 45.8538, lon: -108.6067, city: 'Billings, MT' },
+            { name: 'KBMX', lat: 33.1722, lon: -86.7697, city: 'Birmingham, AL' },
+            { name: 'KBOX', lat: 41.9559, lon: -71.1369, city: 'Boston, MA' },
+            { name: 'KBRO', lat: 25.9159, lon: -97.4189, city: 'Brownsville, TX' },
+            { name: 'KBUF', lat: 42.9488, lon: -78.7369, city: 'Buffalo, NY' },
+            { name: 'KBYX', lat: 24.5975, lon: -81.7032, city: 'Key West, FL' },
+            { name: 'KCAE', lat: 33.9486, lon: -81.1186, city: 'Columbia, SC' },
+            { name: 'KCBW', lat: 46.0392, lon: -67.8064, city: 'Caribou, ME' },
+            { name: 'KCBX', lat: 43.4906, lon: -116.2361, city: 'Boise, ID' },
+            { name: 'KCCX', lat: 40.9231, lon: -78.0039, city: 'State College, PA' },
+            { name: 'KCLE', lat: 41.4131, lon: -81.8597, city: 'Cleveland, OH' },
+            { name: 'KCLX', lat: 32.6555, lon: -81.0422, city: 'Charleston, SC' },
+            { name: 'KCRP', lat: 27.7840, lon: -97.5111, city: 'Corpus Christi, TX' },
+            { name: 'KCXX', lat: 44.5110, lon: -73.1664, city: 'Burlington, VT' },
+            { name: 'KCYS', lat: 41.1519, lon: -104.8061, city: 'Cheyenne, WY' },
+            { name: 'KDAX', lat: 38.5011, lon: -121.6778, city: 'Sacramento, CA' },
+            { name: 'KDDC', lat: 37.7608, lon: -99.9689, city: 'Dodge City, KS' },
+            { name: 'KDFX', lat: 29.2731, lon: -100.2803, city: 'Laughlin AFB, TX' },
+            { name: 'KDGX', lat: 32.2797, lon: -89.9844, city: 'Jackson, MS' },
+            { name: 'KDIX', lat: 39.9469, lon: -74.4108, city: 'Philadelphia, PA' },
+            { name: 'KDLH', lat: 46.8368, lon: -92.2097, city: 'Duluth, MN' },
+            { name: 'KDMX', lat: 41.7311, lon: -93.7229, city: 'Des Moines, IA' },
+            { name: 'KDOX', lat: 38.8256, lon: -75.4400, city: 'Dover AFB, DE' },
+            { name: 'KDTX', lat: 42.6997, lon: -83.4717, city: 'Detroit, MI' },
+            { name: 'KDVN', lat: 41.6116, lon: -90.5809, city: 'Davenport, IA' },
+            { name: 'KDYX', lat: 32.5386, lon: -99.2542, city: 'Dyess AFB, TX' },
+            { name: 'KEAX', lat: 38.8102, lon: -94.2644, city: 'Kansas City, MO' },
+            { name: 'KEMX', lat: 31.8936, lon: -110.6303, city: 'Tucson, AZ' },
+            { name: 'KENX', lat: 42.5864, lon: -74.0639, city: 'Albany, NY' },
+            { name: 'KEOX', lat: 31.4605, lon: -85.4594, city: 'Fort Rucker, AL' },
+            { name: 'KEPZ', lat: 31.8731, lon: -106.6978, city: 'El Paso, TX' },
+            { name: 'KESX', lat: 35.7011, lon: -114.8919, city: 'Las Vegas, NV' },
+            { name: 'KEVX', lat: 30.5644, lon: -85.9214, city: 'Eglin AFB, FL' },
+            { name: 'KEWX', lat: 29.7039, lon: -98.0286, city: 'Austin/San Antonio, TX' },
+            { name: 'KEYX', lat: 35.0979, lon: -117.5608, city: 'Edwards AFB, CA' },
+            { name: 'KFCX', lat: 37.0242, lon: -80.2736, city: 'Roanoke, VA' },
+            { name: 'KFDR', lat: 34.3622, lon: -98.9764, city: 'Frederick, OK' },
+            { name: 'KFDX', lat: 34.6342, lon: -103.6186, city: 'Cannon AFB, NM' },
+            { name: 'KFFC', lat: 33.3636, lon: -84.5658, city: 'Atlanta, GA' },
+            { name: 'KFSD', lat: 43.5878, lon: -96.7292, city: 'Sioux Falls, SD' },
+            { name: 'KFSX', lat: 34.5742, lon: -111.1983, city: 'Flagstaff, AZ' },
+            { name: 'KFTG', lat: 39.7867, lon: -104.5458, city: 'Denver, CO' },
+            { name: 'KFWS', lat: 32.5731, lon: -97.3031, city: 'Dallas/Fort Worth, TX' },
+            { name: 'KGGW', lat: 48.2064, lon: -106.6253, city: 'Glasgow, MT' },
+            { name: 'KGJX', lat: 39.0619, lon: -108.2136, city: 'Grand Junction, CO' },
+            { name: 'KGLD', lat: 39.3667, lon: -101.7003, city: 'Goodland, KS' },
+            { name: 'KGRB', lat: 44.4985, lon: -88.1111, city: 'Green Bay, WI' },
+            { name: 'KGRK', lat: 30.7218, lon: -97.3829, city: 'Fort Hood, TX' },
+            { name: 'KGRR', lat: 42.8939, lon: -85.5449, city: 'Grand Rapids, MI' },
+            { name: 'KGSP', lat: 34.8833, lon: -82.2200, city: 'Greer, SC' },
+            { name: 'KGWX', lat: 33.8967, lon: -88.3289, city: 'Columbus AFB, MS' },
+            { name: 'KGYX', lat: 43.8913, lon: -70.2565, city: 'Portland, ME' },
+            { name: 'KHDX', lat: 33.0769, lon: -106.1219, city: 'Holloman AFB, NM' },
+            { name: 'KHGX', lat: 29.4719, lon: -95.0792, city: 'Houston, TX' },
+            { name: 'KHNX', lat: 36.3142, lon: -119.6319, city: 'San Joaquin Valley, CA' },
+            { name: 'KHPX', lat: 36.7369, lon: -87.2850, city: 'Fort Campbell, KY' },
+            { name: 'KHTX', lat: 34.9306, lon: -86.0833, city: 'Huntsville, AL' },
+            { name: 'KICT', lat: 37.6544, lon: -97.4431, city: 'Wichita, KS' },
+            { name: 'KICX', lat: 37.5908, lon: -112.8619, city: 'Cedar City, UT' },
+            { name: 'KILN', lat: 39.4203, lon: -83.8217, city: 'Cincinnati, OH' },
+            { name: 'KILX', lat: 40.1506, lon: -89.3367, city: 'Lincoln, IL' },
+            { name: 'KIND', lat: 39.7075, lon: -86.2803, city: 'Indianapolis, IN' },
+            { name: 'KINX', lat: 36.1750, lon: -95.5642, city: 'Tulsa, OK' },
+            { name: 'KIWA', lat: 33.2892, lon: -111.6700, city: 'Phoenix, AZ' },
+            { name: 'KIWX', lat: 41.3586, lon: -85.7000, city: 'Fort Wayne, IN' },
+            { name: 'KJAX', lat: 30.4847, lon: -81.7019, city: 'Jacksonville, FL' },
+            { name: 'KJGX', lat: 32.6753, lon: -83.3508, city: 'Robins AFB, GA' },
+            { name: 'KJKL', lat: 37.5908, lon: -83.3130, city: 'Jackson, KY' },
+            { name: 'KLBB', lat: 33.6542, lon: -101.8139, city: 'Lubbock, TX' },
+            { name: 'KLCH', lat: 30.1253, lon: -93.2161, city: 'Lake Charles, LA' },
+            { name: 'KLGX', lat: 47.1158, lon: -124.1064, city: 'Langley Hill, WA' },
+            { name: 'KLIX', lat: 30.3367, lon: -89.8256, city: 'New Orleans, LA' },
+            { name: 'KLNX', lat: 41.9578, lon: -100.5761, city: 'North Platte, NE' },
+            { name: 'KLOT', lat: 41.6044, lon: -88.0844, city: 'Chicago, IL' },
+            { name: 'KLRX', lat: 40.7397, lon: -116.8025, city: 'Elko, NV' },
+            { name: 'KLSX', lat: 38.6989, lon: -90.6828, city: 'St. Louis, MO' },
+            { name: 'KLTX', lat: 33.9892, lon: -78.4292, city: 'Wilmington, NC' },
+            { name: 'KLVX', lat: 37.9753, lon: -85.9439, city: 'Louisville, KY' },
+            { name: 'KLWX', lat: 38.9753, lon: -77.4778, city: 'Sterling, VA' },
+            { name: 'KLZK', lat: 34.8364, lon: -92.2622, city: 'Little Rock, AR' },
+            { name: 'KMAF', lat: 31.9433, lon: -102.1894, city: 'Midland/Odessa, TX' },
+            { name: 'KMAX', lat: 42.0811, lon: -122.7172, city: 'Medford, OR' },
+            { name: 'KMBX', lat: 48.3925, lon: -100.8644, city: 'Minot AFB, ND' },
+            { name: 'KMHX', lat: 34.7758, lon: -76.8761, city: 'Morehead City, NC' },
+            { name: 'KMKX', lat: 42.9678, lon: -88.5506, city: 'Milwaukee, WI' },
+            { name: 'KMLB', lat: 28.1133, lon: -80.6542, city: 'Melbourne, FL' },
+            { name: 'KMOB', lat: 30.6794, lon: -88.2397, city: 'Mobile, AL' },
+            { name: 'KMPX', lat: 44.8489, lon: -93.5653, city: 'Minneapolis, MN' },
+            { name: 'KMQT', lat: 46.5311, lon: -87.5486, city: 'Marquette, MI' },
+            { name: 'KMRX', lat: 36.1686, lon: -83.4019, city: 'Knoxville, TN' },
+            { name: 'KMSX', lat: 47.0411, lon: -113.9864, city: 'Missoula, MT' },
+            { name: 'KMTX', lat: 41.2628, lon: -112.4472, city: 'Salt Lake City, UT' },
+            { name: 'KMUX', lat: 37.1550, lon: -121.8983, city: 'San Francisco, CA' },
+            { name: 'KMVX', lat: 47.5278, lon: -97.3256, city: 'Fargo, ND' },
+            { name: 'KMXX', lat: 32.5367, lon: -85.7897, city: 'Maxwell AFB, AL' },
+            { name: 'KNKX', lat: 32.9189, lon: -117.0419, city: 'San Diego, CA' },
+            { name: 'KNQA', lat: 35.3447, lon: -89.8733, city: 'Memphis, TN' },
+            { name: 'KOAX', lat: 41.3203, lon: -96.3667, city: 'Omaha, NE' },
+            { name: 'KOHX', lat: 36.2472, lon: -86.5625, city: 'Nashville, TN' },
+            { name: 'KOKX', lat: 40.8656, lon: -72.8639, city: 'New York, NY' },
+            { name: 'KOTX', lat: 47.6803, lon: -117.6267, city: 'Spokane, WA' },
+            { name: 'KPAH', lat: 37.0683, lon: -88.7719, city: 'Paducah, KY' },
+            { name: 'KPBZ', lat: 40.5317, lon: -80.2178, city: 'Pittsburgh, PA' },
+            { name: 'KPDT', lat: 45.6906, lon: -118.8528, city: 'Pendleton, OR' },
+            { name: 'KPOE', lat: 31.1556, lon: -92.9761, city: 'Fort Polk, LA' },
+            { name: 'KPUX', lat: 38.4595, lon: -104.1814, city: 'Pueblo, CO' },
+            { name: 'KRAX', lat: 35.6655, lon: -78.4897, city: 'Raleigh/Durham, NC' },
+            { name: 'KRGX', lat: 39.7542, lon: -119.4611, city: 'Reno, NV' },
+            { name: 'KRIW', lat: 43.0661, lon: -108.4773, city: 'Riverton, WY' },
+            { name: 'KRLX', lat: 38.3111, lon: -81.7233, city: 'Charleston, WV' },
+            { name: 'KRTX', lat: 45.7150, lon: -122.9650, city: 'Portland, OR' },
+            { name: 'KSFX', lat: 43.1056, lon: -112.6861, city: 'Pocatello, ID' },
+            { name: 'KSGF', lat: 37.2353, lon: -93.4006, city: 'Springfield, MO' },
+            { name: 'KSHV', lat: 32.4508, lon: -93.8414, city: 'Shreveport, LA' },
+            { name: 'KSJT', lat: 31.3711, lon: -100.4925, city: 'San Angelo, TX' },
+            { name: 'KSOX', lat: 33.8178, lon: -117.6369, city: 'March AFB, CA' },
+            { name: 'KSRX', lat: 35.2906, lon: -94.3619, city: 'Fort Smith, AR' },
+            { name: 'KTBW', lat: 27.7056, lon: -82.4017, city: 'Tampa, FL' },
+            { name: 'KTFX', lat: 47.4597, lon: -111.3856, city: 'Great Falls, MT' },
+            { name: 'KTLH', lat: 30.3975, lon: -84.3289, city: 'Tallahassee, FL' },
+            { name: 'KTLX', lat: 35.3331, lon: -97.2778, city: 'Oklahoma City, OK' },
+            { name: 'KTWX', lat: 38.9969, lon: -96.2325, city: 'Topeka, KS' },
+            { name: 'KTYX', lat: 43.7556, lon: -75.6800, city: 'Fort Drum, NY' },
+            { name: 'KUDX', lat: 44.1248, lon: -102.8297, city: 'Rapid City, SD' },
+            { name: 'KUEX', lat: 40.3208, lon: -98.4419, city: 'Grand Island, NE' },
+            { name: 'KVBX', lat: 34.8381, lon: -120.3958, city: 'Vandenberg AFB, CA' },
+            { name: 'KVNX', lat: 36.7406, lon: -98.1278, city: 'Vance AFB, OK' },
+            { name: 'KVTX', lat: 34.4117, lon: -119.1797, city: 'Los Angeles, CA' },
+            { name: 'KVWX', lat: 38.2603, lon: -87.7247, city: 'Evansville, IN' },
+            { name: 'KYUX', lat: 32.4953, lon: -114.6567, city: 'Yuma, AZ' }
         ];
 
         const radarIcon = L.divIcon({
             className: 'radar-marker',
-            html: `<div style="background-color: #FF0000; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); cursor: pointer;"></div>`,
+            html: `
+                <div style="
+                    background-color: #FF0000; 
+                    width: 16px; 
+                    height: 16px; 
+                    border-radius: 50%; 
+                    border: 3px solid white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                    cursor: pointer;
+                "></div>
+            `,
             iconSize: [16, 16]
         });
 
         const selectedRadarIcon = L.divIcon({
             className: 'radar-marker-selected',
-            html: `<div style="background-color: #00FF00; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.7); cursor: pointer;"></div>`,
+            html: `
+                <div style="
+                    background-color: #00FF00; 
+                    width: 20px; 
+                    height: 20px; 
+                    border-radius: 50%; 
+                    border: 3px solid white;
+                    box-shadow: 0 3px 6px rgba(0,0,0,0.7);
+                    cursor: pointer;
+                "></div>
+            `,
             iconSize: [20, 20]
         });
 
@@ -141,15 +285,18 @@
             const marker = L.marker([site.lat, site.lon], { icon: radarIcon })
                 .bindPopup(`<b>${site.name}</b><br>${site.city}<br><small>Click to select</small>`)
                 .addTo(map);
-
+            
             marker.on('click', function() {
-                if (selectedMarker) selectedMarker.setIcon(radarIcon);
+                if (selectedMarker) {
+                    selectedMarker.setIcon(radarIcon);
+                }
+                
                 selectedSite = site;
                 selectedMarker = marker;
                 marker.setIcon(selectedRadarIcon);
                 updateSelectedSiteDisplay();
             });
-
+            
             site.marker = marker;
         });
 
@@ -158,9 +305,21 @@
             if (!display) {
                 display = document.createElement('div');
                 display.id = 'selectedSite';
-                display.style.cssText = `position: fixed; top: 115px; left: 8px; padding: 10px 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 1000; font-size: 14px; font-weight: 600;`;
+                display.style.cssText = `
+                    position: fixed;
+                    top: 115px;
+                    left: 8px;
+                    padding: 10px 15px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    font-size: 14px;
+                    font-weight: 600;
+                `;
                 document.body.appendChild(display);
             }
+            
             if (selectedSite) {
                 display.innerHTML = `<strong>Selected:</strong> ${selectedSite.name} - ${selectedSite.city}`;
                 display.style.display = 'block';
@@ -169,17 +328,6 @@
             }
         }
 
-        function debugLog(message) {
-            const debug = document.getElementById('debugInfo');
-            debug.style.display = 'block';
-            debug.innerHTML += message + '<br>';
-            console.log(message);
-        }
-
-        // ========================
-        // FIXED TILE LAYERS
-        // ========================
-
         function CompositeReflectivityFunction() {
             const btn = document.getElementById('compositeBtn');
             if (radarLayer) {
@@ -187,117 +335,87 @@
                 radarLayer = null;
                 btn.classList.remove('active');
             } else {
-                radarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png`, {
+                const timestamp = new Date().getTime();
+                radarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
                     attribution: 'NEXRAD via Iowa Environmental Mesonet',
-                    opacity: 0.6,
-                    minZoom: 4,
-                    maxZoom: 10,
-                    tms: false
+                    opacity: 0.6
                 }).addTo(map);
                 btn.classList.add('active');
-                debugLog('Composite reflectivity loaded (Level 3)');
             }
         }
 
         function BrFunction() {
             const btn = document.getElementById('brBtn');
-            if (!selectedSite) return alert("Please click on a radar site first!");
+            if (!selectedSite) {
+                alert("Please click on a radar site first!");
+                return;
+            }
+            
             if (siteRadarLayer) {
                 map.removeLayer(siteRadarLayer);
                 siteRadarLayer = null;
                 btn.classList.remove('active');
                 document.getElementById('bvBtn').classList.remove('active');
-                document.getElementById('l2Btn').classList.remove('active');
             } else {
                 const radarCode = selectedSite.name.substring(1);
-                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png`, {
-                    attribution: `${selectedSite.name} Base Reflectivity (Level 3)`,
-                    opacity: 0.8,
-                    minZoom: 5,
-                    maxZoom: 10,
-                    tms: false
+                const timestamp = new Date().getTime();
+                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
+                    attribution: `${selectedSite.name} Base Reflectivity`,
+                    opacity: 1
                 }).addTo(map);
                 btn.classList.add('active');
                 document.getElementById('bvBtn').classList.remove('active');
-                document.getElementById('l2Btn').classList.remove('active');
+                
                 map.setView([selectedSite.lat, selectedSite.lon], 8);
-                debugLog(`BR loaded for ${selectedSite.name} (Level 3 - N0Q)`);
             }
         }
 
         function BvFunction() {
             const btn = document.getElementById('bvBtn');
-            if (!selectedSite) return alert("Please click on a radar site first!");
+            if (!selectedSite) {
+                alert("Please click on a radar site first!");
+                return;
+            }
+            
             if (siteRadarLayer) {
                 map.removeLayer(siteRadarLayer);
                 siteRadarLayer = null;
                 btn.classList.remove('active');
                 document.getElementById('brBtn').classList.remove('active');
-                document.getElementById('l2Btn').classList.remove('active');
             } else {
                 const radarCode = selectedSite.name.substring(1);
-                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0-900913/{z}/{x}/{y}.png`, {
-                    attribution: `${selectedSite.name} Storm Velocity (Level 3)`,
-                    opacity: 0.8,
-                    minZoom: 5,
-                    maxZoom: 10,
-                    tms: false
+                const timestamp = new Date().getTime();
+                // Use N0U for velocity
+                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0U-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
+                    attribution: `${selectedSite.name} Base Velocity`,
+                    opacity: 1
                 }).addTo(map);
                 btn.classList.add('active');
                 document.getElementById('brBtn').classList.remove('active');
-                document.getElementById('l2Btn').classList.remove('active');
+                
                 map.setView([selectedSite.lat, selectedSite.lon], 8);
-                debugLog(`BV loaded for ${selectedSite.name} (Level 3 - N0S)`);
             }
         }
 
-        function Level2Function() {
-            const btn = document.getElementById('l2Btn');
-            if (!selectedSite) return alert("Please click on a radar site first!");
-            if (siteRadarLayer) {
-                map.removeLayer(siteRadarLayer);
-                siteRadarLayer = null;
-                btn.classList.remove('active');
-                document.getElementById('brBtn').classList.remove('active');
-                document.getElementById('bvBtn').classList.remove('active');
-            } else {
-                const radarCode = selectedSite.name.substring(1);
-                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png`, {
-                    attribution: `${selectedSite.name} Super-Res (Higher Quality)`,
-                    opacity: 0.9,
-                    minZoom: 5,
-                    maxZoom: 10,
-                    tms: false
-                }).addTo(map);
-                btn.classList.add('active');
-                document.getElementById('brBtn').classList.remove('active');
-                document.getElementById('bvBtn').classList.remove('active');
-                map.setView([selectedSite.lat, selectedSite.lon], 9);
-                debugLog(`Level 2 quality data loaded for ${selectedSite.name}`);
-                debugLog(`Note: This is Super-Res Level 3, not true Level 2`);
-            }
-        }
-
-        // Auto-refresh
+        // Auto-refresh every 2 minutes
         setInterval(() => {
             if (radarLayer) {
                 const btn = document.getElementById('compositeBtn');
                 btn.click();
-                setTimeout(() => btn.click(), 100);
-                debugLog('Auto-refreshed composite radar');
+                btn.click(); // Toggle off and on to refresh
             }
+            
             if (siteRadarLayer) {
-                ['brBtn','bvBtn','l2Btn'].forEach(id => {
-                    const b = document.getElementById(id);
-                    if (b.classList.contains('active')) {
-                        b.click();
-                        setTimeout(() => b.click(), 100);
-                    }
-                });
-                debugLog('Auto-refreshed site radar');
+                const isBr = document.getElementById('brBtn').classList.contains('active');
+                if (isBr) {
+                    document.getElementById('brBtn').click();
+                    document.getElementById('brBtn').click();
+                } else {
+                    document.getElementById('bvBtn').click();
+                    document.getElementById('bvBtn').click();
+                }
             }
-        }, 120000);
-
+        }, 120000); // 2 minutes
     </script>
 </body>
 </html>
