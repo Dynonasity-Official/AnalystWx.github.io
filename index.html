@@ -3,29 +3,46 @@
 <head>
     <meta charset="utf-8" />
     <title>AnalystWx</title>
-
     <!-- Load Inter font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-
-    <style>
-    h2 {
-        margin-top: 0px;
-    }
-    </style>
-
+    <!-- Load Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
-
+        
+        /* Map container - fills entire screen */
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+        
+        /* Panel positioned above the map */
         .panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
             padding: 20px;
             width: 600px;
             height: 85px;
             border-radius: 15px;
             background: linear-gradient(to bottom, #1E90FF, #ADD8E6);
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
-
+        
+        h2 {
+            margin-top: 0px;
+        }
+        
         .blue-button {
             background-color: #1E90FF;
             color: white;
@@ -35,21 +52,20 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 0px;
-
         }
-
+        
         .blue-button:hover {
             background-color: #187bcd;
         }
     </style>
 </head>
-
 <body>
-
+    <!-- Map container -->
+    <div id="map"></div>
+    
+    <!-- Control panel -->
     <div class="panel">
-
         <h2>AnalystWX</h2>
-
         <button class="blue-button" onclick="CompositeReflectivityFunction()">            
             CompositeReflectivity
         </button>
@@ -59,10 +75,21 @@
         <button class="blue-button" onclick="BvFunction()">            
             Bv
         </button>
-
     </div>
-
+    
+    <!-- Load Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // Initialize the map
+        const map = L.map('map').setView([37.8, -96], 4); // Centered on US
+        
+        // Add OpenStreetMap tile layer (completely free)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Your existing functions
         function CompositeReflectivityFunction() {
             alert("CompositeReflectivity Loading...");
         }
@@ -73,6 +100,5 @@
             alert("Bv Loading...");
         }
     </script>
-
 </body>
 </html>
