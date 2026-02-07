@@ -98,14 +98,19 @@
             attribution: '© CartoDB'
         }).addTo(map);
 
-        // US and state borders
-        const usBorders = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_only_labels/{z}/{x}/{y}.png', {
-            attribution: '&copy; US Borders &copy; CartoDB',
-            subdomains: 'abcd',
-            maxZoom: 20,
-            minZoom: 4,
-            opacity: 0.7
+        // US state borders
+        const stateBorders = L.geoJSON(null, {
+            style: {
+            color: "#0000FF", // border color
+            weight: 2,
+            fill: false
         }).addTo(map);
+
+// Load US states GeoJSON
+fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+    .then(res => res.json())
+    .then(data => stateBorders.addData(data));
+
 
         let radarLayer = null;
         let siteRadarLayer = null;
