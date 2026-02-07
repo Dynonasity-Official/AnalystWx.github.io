@@ -84,8 +84,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const map = L.map('map', {
-            minZoom: 4,
-            maxZoom: 19
+            minZoom: 2,
+            maxZoom: 14
         }).setView([37.0902, -95.7129], 4);
 
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -98,19 +98,14 @@
             attribution: '© CartoDB'
         }).addTo(map);
 
-        // US state borders
-        const stateBorders = L.geoJSON(null, {
-            style: {
-            color: "#0000FF", // border color
-            weight: 2,
-            fill: false
+        // US and state borders
+        const usBorders = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_only_labels/{z}/{x}/{y}.png', {
+            attribution: '&copy; US Borders &copy; CartoDB',
+            subdomains: 'abcd',
+            maxZoom: 20,
+            minZoom: 4,
+            opacity: 0.7
         }).addTo(map);
-
-// Load US states GeoJSON
-fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
-    .then(res => res.json())
-    .then(data => stateBorders.addData(data));
-
 
         let radarLayer = null;
         let siteRadarLayer = null;
