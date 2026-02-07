@@ -3,9 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>AnalystWx</title>
-    <!-- Load Inter font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Load Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
@@ -15,7 +13,6 @@
             overflow: hidden;
         }
         
-        /* Map container - fills entire screen */
         #map {
             position: fixed;
             top: 0;
@@ -25,7 +22,6 @@
             z-index: 1;
         }
         
-        /* Panel positioned above the map */
         .panel {
             position: fixed;
             top: 8px;
@@ -62,13 +58,16 @@
             background-color: #0066cc;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
+
+        .radar-marker:hover div {
+            transform: scale(1.2);
+            transition: transform 0.2s;
+        }
     </style>
 </head>
 <body>
-    <!-- Map container -->
     <div id="map"></div>
     
-    <!-- Control panel -->
     <div class="panel">
         <h2>AnalystWX</h2>
         <button class="blue-button" id="compositeBtn" onclick="CompositeReflectivityFunction()">            
@@ -82,30 +81,29 @@
         </button>
     </div>
     
-    <!-- Load Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initialize the map
-        const map = L.map('map').setView([37.0902, -95.7129], 4);
+        const map = L.map('map', {
+            minZoom: 4,
+            maxZoom: 19
+        }).setView([37.0902, -95.7129], 4);
 
-        // Add satellite imagery
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: '© Esri',
             maxZoom: 19,
-            minZoom: 4,
+            minZoom: 4
         }).addTo(map);
 
-        // Add boundaries/labels
         const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
             attribution: '© CartoDB'
         }).addTo(map);
 
-        // Radar layers
         let radarLayer = null;
         let siteRadarLayer = null;
         let selectedSite = null;
+        let selectedMarker = null;
+        let updateInterval = null;
 
-        // All NEXRAD radar sites in the US
         const radarSites = [
             { name: 'KABR', lat: 45.4558, lon: -98.4132, city: 'Aberdeen, SD' },
             { name: 'KABX', lat: 35.1497, lon: -106.8239, city: 'Albuquerque, NM' },
@@ -251,23 +249,84 @@
             { name: 'KYUX', lat: 32.4953, lon: -114.6567, city: 'Yuma, AZ' }
         ];
 
-        // Radar site icon
         const radarIcon = L.divIcon({
             className: 'radar-marker',
-            html: '<div style="background-color: #FF0000; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white;"></div>',
-            iconSize: [10, 10]
+            html: `
+                <div style="
+                    background-color: #FF0000; 
+                    width: 16px; 
+                    height: 16px; 
+                    border-radius: 50%; 
+                    border: 3px solid white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                    cursor: pointer;
+                "></div>
+            `,
+            iconSize: [16, 16]
         });
 
-        // Add radar sites to map
+        const selectedRadarIcon = L.divIcon({
+            className: 'radar-marker-selected',
+            html: `
+                <div style="
+                    background-color: #00FF00; 
+                    width: 20px; 
+                    height: 20px; 
+                    border-radius: 50%; 
+                    border: 3px solid white;
+                    box-shadow: 0 3px 6px rgba(0,0,0,0.7);
+                    cursor: pointer;
+                "></div>
+            `,
+            iconSize: [20, 20]
+        });
+
         radarSites.forEach(site => {
             const marker = L.marker([site.lat, site.lon], { icon: radarIcon })
-                .bindPopup(`<b>${site.name}</b><br>${site.city}`)
+                .bindPopup(`<b>${site.name}</b><br>${site.city}<br><small>Click to select</small>`)
                 .addTo(map);
             
             marker.on('click', function() {
+                if (selectedMarker) {
+                    selectedMarker.setIcon(radarIcon);
+                }
+                
                 selectedSite = site;
+                selectedMarker = marker;
+                marker.setIcon(selectedRadarIcon);
+                updateSelectedSiteDisplay();
             });
+            
+            site.marker = marker;
         });
+
+        function updateSelectedSiteDisplay() {
+            let display = document.getElementById('selectedSite');
+            if (!display) {
+                display = document.createElement('div');
+                display.id = 'selectedSite';
+                display.style.cssText = `
+                    position: fixed;
+                    top: 115px;
+                    left: 8px;
+                    padding: 10px 15px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    font-size: 14px;
+                    font-weight: 600;
+                `;
+                document.body.appendChild(display);
+            }
+            
+            if (selectedSite) {
+                display.innerHTML = `<strong>Selected:</strong> ${selectedSite.name} - ${selectedSite.city}`;
+                display.style.display = 'block';
+            } else {
+                display.style.display = 'none';
+            }
+        }
 
         function CompositeReflectivityFunction() {
             const btn = document.getElementById('compositeBtn');
@@ -276,7 +335,8 @@
                 radarLayer = null;
                 btn.classList.remove('active');
             } else {
-                radarLayer = L.tileLayer('https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png', {
+                const timestamp = new Date().getTime();
+                radarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
                     attribution: 'NEXRAD via Iowa Environmental Mesonet',
                     opacity: 0.6
                 }).addTo(map);
@@ -295,15 +355,17 @@
                 map.removeLayer(siteRadarLayer);
                 siteRadarLayer = null;
                 btn.classList.remove('active');
+                document.getElementById('bvBtn').classList.remove('active');
             } else {
-                const radarCode = selectedSite.name.substring(1); // Remove 'K' prefix
-                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png`, {
+                const radarCode = selectedSite.name.substring(1);
+                const timestamp = new Date().getTime();
+                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
                     attribution: `${selectedSite.name} Base Reflectivity`,
                     opacity: 0.7
                 }).addTo(map);
                 btn.classList.add('active');
+                document.getElementById('bvBtn').classList.remove('active');
                 
-                // Center on radar site
                 map.setView([selectedSite.lat, selectedSite.lon], 8);
             }
         }
@@ -319,18 +381,41 @@
                 map.removeLayer(siteRadarLayer);
                 siteRadarLayer = null;
                 btn.classList.remove('active');
+                document.getElementById('brBtn').classList.remove('active');
             } else {
-                const radarCode = selectedSite.name.substring(1); // Remove 'K' prefix
-                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0V-0-900913/{z}/{x}/{y}.png`, {
+                const radarCode = selectedSite.name.substring(1);
+                const timestamp = new Date().getTime();
+                // Use N0U for velocity
+                siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0U-0-900913/{z}/{x}/{y}.png?t=${timestamp}`, {
                     attribution: `${selectedSite.name} Base Velocity`,
                     opacity: 0.7
                 }).addTo(map);
                 btn.classList.add('active');
+                document.getElementById('brBtn').classList.remove('active');
                 
-                // Center on radar site
                 map.setView([selectedSite.lat, selectedSite.lon], 8);
             }
         }
+
+        // Auto-refresh every 2 minutes
+        setInterval(() => {
+            if (radarLayer) {
+                const btn = document.getElementById('compositeBtn');
+                btn.click();
+                btn.click(); // Toggle off and on to refresh
+            }
+            
+            if (siteRadarLayer) {
+                const isBr = document.getElementById('brBtn').classList.contains('active');
+                if (isBr) {
+                    document.getElementById('brBtn').click();
+                    document.getElementById('brBtn').click();
+                } else {
+                    document.getElementById('bvBtn').click();
+                    document.getElementById('bvBtn').click();
+                }
+            }
+        }, 120000); // 2 minutes
     </script>
 </body>
 </html>
