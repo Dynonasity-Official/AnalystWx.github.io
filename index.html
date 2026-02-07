@@ -126,18 +126,25 @@
             const btn = document.getElementById('rainviewerBtn');
             if (rainviewerLayer) { clearAllRadarLayers(); return; }
             clearAllRadarLayers();
+
             fetch('https://api.rainviewer.com/public/weather-maps.json')
-                .then(res => res.json())
-                .then(json => {
-                    const frames = json.radar?.past || [];
-                    if (!frames.length) return alert("No radar frames available");
-                    const latestFrame = frames[frames.length - 1]; // most recent frame
-                    const ts = latestFrame.time;
-                    const url = `https://tilecache.rainviewer.com/v2/radar/${ts}/{z}/{x}/{y}/2/1_1.png`;
-                    rainviewerLayer = L.tileLayer(url, { opacity: 0.6, attribution: 'RainViewer' }).addTo(map);
-                    btn.classList.add('active');
-                });
-        };
+            .then(res => res.json())
+            .then(json => {
+                // Use 'past' frames if available, otherwise 'nowcast'
+                const frames = (json.radar?.past?.length ? json.radar.past : json.radar?.nowcast?.frames) || [];
+                if (!frames.length) return alert("No radar frames available");
+
+                const latestFrame = frames[frames.length - 1]; // most recent frame
+                const ts = latestFrame.time;
+
+                // Use v3 tiles with proper path
+                const url = `https://tilecache.rainviewer.com/v3/radar/${ts}/{z}/{x}/{y}/2/1_1.png`;
+                rainviewerLayer = L.tileLayer(url, { opacity: 0.6, attribution: 'RainViewer' }).addTo(map);
+                btn.classList.add('active');
+        })
+        .catch(err => alert("Failed to load RainViewer: " + err));
+};
+
 
         // Auto-refresh every 2 minutes
         setInterval(() => {
