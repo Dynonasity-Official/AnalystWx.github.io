@@ -27,9 +27,10 @@
         
         /* Panel positioned above the map */
         .panel {
+
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 15px;
+            left: 10px;
             padding: 20px;
             width: 600px;
             height: 85px;
@@ -81,7 +82,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Initialize the map
-        const map = L.map('map').setView([37.8, -96], 4); // Centered on US
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+        const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png');
+
+        satellite.addTo(map);
+        boundaries.addTo(map);
+
         
         // Add OpenStreetMap tile layer (completely free)
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -89,7 +96,8 @@
             maxZoom: 19
         }).addTo(map);
         
-        // Your existing functions
+
+
         function CompositeReflectivityFunction() {
             alert("CompositeReflectivity Loading...");
         }
