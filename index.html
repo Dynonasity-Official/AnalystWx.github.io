@@ -84,7 +84,7 @@
         const map = L.map('map').setView([37.8, -96], 4); // Centered on US
         
         // Add OpenStreetMap tile layer (completely free)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(map);
