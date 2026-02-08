@@ -452,14 +452,19 @@ document.getElementById('superBrBtn').onclick = () => {
     
     const radarCode = selectedSite.name.substring(1);
     
-    // N0S = Super Resolution Reflectivity (CORRECT PRODUCT)
-    siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0-900913/{z}/{x}/{y}.png?t=${Date.now()}`, { 
+    // Try N0S first, if it doesn't work the tile server will show nothing
+    // N0S = Super Resolution Reflectivity
+    // Format: ridge::SITE-PRODUCT-TILT-PROJECTION
+    const timestamp = Date.now();
+    siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
         attribution: `${selectedSite.name} Super-Res Reflectivity`, 
         opacity: 1.0,
-        maxZoom: 13
+        maxZoom: 13,
+        errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' // transparent pixel on error
     }).addTo(map);
+    
     btn.classList.add('active');
-    map.setView([selectedSite.lat, selectedSite.lon], 9); // Zoom in to see detail
+    map.setView([selectedSite.lat, selectedSite.lon], 9);
     showInfo('SUPER RESOLUTION reflectivity (0.5° x 0.25km) - 4x more detail!');
     showColorLegend('reflectivity');
 };
@@ -475,8 +480,8 @@ document.getElementById('superBrBtn').onclick = () => {
 // - Microbursts
 //
 // COLOR GUIDE:
-// - Green = wind moving TOWARD the radar
-// - Red = wind moving AWAY from radar
+// - Green/Blue = wind moving TOWARD the radar
+// - Red/Orange = wind moving AWAY from radar
 // - Look for tight red/green couplets = rotation!
 document.getElementById('superBvBtn').onclick = () => {
     if (!selectedSite) return alert("Please click on a radar site first!");
@@ -486,12 +491,15 @@ document.getElementById('superBvBtn').onclick = () => {
     
     const radarCode = selectedSite.name.substring(1);
     
-    // N0V = Super Resolution Velocity (CORRECT PRODUCT)
-    siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0V-0-900913/{z}/{x}/{y}.png?t=${Date.now()}`, { 
+    // N0V = Super Resolution Velocity
+    const timestamp = Date.now();
+    siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0V-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
         attribution: `${selectedSite.name} Super-Res Velocity`, 
         opacity: 1.0,
-        maxZoom: 13
+        maxZoom: 13,
+        errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
     }).addTo(map);
+    
     btn.classList.add('active');
     map.setView([selectedSite.lat, selectedSite.lon], 9);
     showInfo('SUPER RESOLUTION velocity (0.5°) - Better rotation detection!');
