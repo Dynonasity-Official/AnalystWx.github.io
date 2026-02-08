@@ -318,6 +318,25 @@ radarSites.forEach(site => {
         selectedMarker = marker;
         marker.setIcon(selectedRadarIcon);
         updateSelectedSiteDisplay();
+        
+        // AUTO-LOAD REFLECTIVITY when site is clicked
+        // Clear any existing radar layers first
+        clearAllRadarLayers();
+        
+        // Load reflectivity automatically
+        const radarCode = selectedSite.name.substring(1);
+        const timestamp = Date.now();
+        siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
+            attribution: `${selectedSite.name} Super-Res Reflectivity`, 
+            opacity: 1.0,
+            maxZoom: 13,
+            errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        }).addTo(map);
+        
+        document.getElementById('superBrBtn').classList.add('active');
+        map.setView([selectedSite.lat, selectedSite.lon], 9);
+        showInfo('SUPER RESOLUTION reflectivity (0.5° x 0.25km) - 4x more detail!');
+        showColorLegend('reflectivity');
     });
     site.marker = marker;
 });
@@ -447,20 +466,21 @@ document.getElementById('compositeBtn').onclick = () => {
 document.getElementById('superBrBtn').onclick = () => {
     if (!selectedSite) return alert("Please click on a radar site first!");
     const btn = document.getElementById('superBrBtn');
-    if (siteRadarLayer) { clearAllRadarLayers(); return; }
+    if (siteRadarLayer && btn.classList.contains('active')) { 
+        clearAllRadarLayers(); 
+        return; 
+    }
     clearAllRadarLayers();
     
     const radarCode = selectedSite.name.substring(1);
     
-    // Try N0S first, if it doesn't work the tile server will show nothing
-    // N0S = Super Resolution Reflectivity
-    // Format: ridge::SITE-PRODUCT-TILT-PROJECTION
+    // N0S = Super Resolution Reflectivity (SHOWS PRECIPITATION INTENSITY)
     const timestamp = Date.now();
     siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
         attribution: `${selectedSite.name} Super-Res Reflectivity`, 
         opacity: 1.0,
         maxZoom: 13,
-        errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' // transparent pixel on error
+        errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
     }).addTo(map);
     
     btn.classList.add('active');
@@ -486,12 +506,15 @@ document.getElementById('superBrBtn').onclick = () => {
 document.getElementById('superBvBtn').onclick = () => {
     if (!selectedSite) return alert("Please click on a radar site first!");
     const btn = document.getElementById('superBvBtn');
-    if (siteRadarLayer) { clearAllRadarLayers(); return; }
+    if (siteRadarLayer && btn.classList.contains('active')) { 
+        clearAllRadarLayers(); 
+        return; 
+    }
     clearAllRadarLayers();
     
     const radarCode = selectedSite.name.substring(1);
     
-    // N0V = Super Resolution Velocity
+    // N0V = Super Resolution Velocity (SHOWS WIND SPEED/DIRECTION)
     const timestamp = Date.now();
     siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0V-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
         attribution: `${selectedSite.name} Super-Res Velocity`, 
