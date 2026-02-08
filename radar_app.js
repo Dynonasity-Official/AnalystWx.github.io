@@ -474,7 +474,7 @@ document.getElementById('superBrBtn').onclick = () => {
     
     // N0Q = Base Reflectivity (SHOWS PRECIPITATION INTENSITY)
     const timestamp = Date.now();
-    const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0/{z}/{x}/{y}.png?t=${timestamp}`;
+    const const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge/standard/${radarCode}/N0Q/{z}/{x}/{y}.png?_=${Date.now()}`;
     console.log(`Reflectivity button - Loading: ${url}`);
     
     siteRadarLayer = L.tileLayer(url, { 
@@ -508,7 +508,7 @@ document.getElementById('superBvBtn').onclick = () => {
     
     // N0U = Base Velocity (SHOWS WIND SPEED/DIRECTION)
     const timestamp = Date.now();
-    const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0U-0/{z}/{x}/{y}.png?t=${timestamp}`;
+    const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge/standard/${radarCode}/N0U/{z}/{x}/{y}.png?_=${Date.now()}`;
     console.log(`Velocity button - Loading: ${url}`);
     
     siteRadarLayer = L.tileLayer(url, { 
