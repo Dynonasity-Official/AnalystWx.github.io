@@ -326,8 +326,14 @@ radarSites.forEach(site => {
         // Load reflectivity automatically
         const radarCode = selectedSite.name.substring(1);
         const timestamp = Date.now();
-        siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
-            attribution: `${selectedSite.name} Super-Res Reflectivity`, 
+        
+        // Try N0Q (standard reflectivity) which is more widely available
+        console.log(`Loading reflectivity for ${radarCode}`);
+        const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0/{z}/{x}/{y}.png?t=${timestamp}`;
+        console.log(`URL: ${url}`);
+        
+        siteRadarLayer = L.tileLayer(url, { 
+            attribution: `${selectedSite.name} Base Reflectivity`, 
             opacity: 1.0,
             maxZoom: 13,
             errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
@@ -335,7 +341,7 @@ radarSites.forEach(site => {
         
         document.getElementById('superBrBtn').classList.add('active');
         map.setView([selectedSite.lat, selectedSite.lon], 9);
-        showInfo('SUPER RESOLUTION reflectivity (0.5° x 0.25km) - 4x more detail!');
+        showInfo('Base reflectivity - showing precipitation');
         showColorLegend('reflectivity');
     });
     site.marker = marker;
@@ -453,16 +459,8 @@ document.getElementById('compositeBtn').onclick = () => {
 // ====================================================================
 // SUPER RESOLUTION BASE REFLECTIVITY BUTTON
 // ====================================================================
-// N0S product: 0.5° x 0.25 km resolution (4x more detail than N0Q!)
-// This is TRUE Level 3 super resolution data
-// FREE from Iowa Mesonet - no API key needed
-//
-// WHAT THIS MEANS FOR YOUR WEBSITE:
-// - Much sharper storm details
-// - Better hook echo detection
-// - More accurate precipitation estimates
-// - Essential for severe weather analysis
-// - Zoom in to levels 9-12 to see the difference
+// Using N0Q for now as it's more reliable
+// N0Q product: Standard reflectivity, widely available
 document.getElementById('superBrBtn').onclick = () => {
     if (!selectedSite) return alert("Please click on a radar site first!");
     const btn = document.getElementById('superBrBtn');
@@ -474,10 +472,13 @@ document.getElementById('superBrBtn').onclick = () => {
     
     const radarCode = selectedSite.name.substring(1);
     
-    // N0S = Super Resolution Reflectivity (SHOWS PRECIPITATION INTENSITY)
+    // N0Q = Base Reflectivity (SHOWS PRECIPITATION INTENSITY)
     const timestamp = Date.now();
-    siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0S-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
-        attribution: `${selectedSite.name} Super-Res Reflectivity`, 
+    const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0/{z}/{x}/{y}.png?t=${timestamp}`;
+    console.log(`Reflectivity button - Loading: ${url}`);
+    
+    siteRadarLayer = L.tileLayer(url, { 
+        attribution: `${selectedSite.name} Base Reflectivity`, 
         opacity: 1.0,
         maxZoom: 13,
         errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
@@ -485,24 +486,15 @@ document.getElementById('superBrBtn').onclick = () => {
     
     btn.classList.add('active');
     map.setView([selectedSite.lat, selectedSite.lon], 9);
-    showInfo('SUPER RESOLUTION reflectivity (0.5° x 0.25km) - 4x more detail!');
+    showInfo('Base reflectivity - showing precipitation');
     showColorLegend('reflectivity');
 };
 
 // ====================================================================
 // SUPER RESOLUTION BASE VELOCITY BUTTON
 // ====================================================================
-// N0V product: 0.5° resolution (2x more detail than N0U!)
-// Critical for detecting:
-// - Mesocyclones
-// - Tornado signatures
-// - Wind shear
-// - Microbursts
-//
-// COLOR GUIDE:
-// - Green/Blue = wind moving TOWARD the radar
-// - Red/Orange = wind moving AWAY from radar
-// - Look for tight red/green couplets = rotation!
+// Using N0U for now as it's more reliable
+// N0U product: Standard velocity, widely available
 document.getElementById('superBvBtn').onclick = () => {
     if (!selectedSite) return alert("Please click on a radar site first!");
     const btn = document.getElementById('superBvBtn');
@@ -514,10 +506,13 @@ document.getElementById('superBvBtn').onclick = () => {
     
     const radarCode = selectedSite.name.substring(1);
     
-    // N0V = Super Resolution Velocity (SHOWS WIND SPEED/DIRECTION)
+    // N0U = Base Velocity (SHOWS WIND SPEED/DIRECTION)
     const timestamp = Date.now();
-    siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0V-0/{z}/{x}/{y}.png?t=${timestamp}`, { 
-        attribution: `${selectedSite.name} Super-Res Velocity`, 
+    const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0U-0/{z}/{x}/{y}.png?t=${timestamp}`;
+    console.log(`Velocity button - Loading: ${url}`);
+    
+    siteRadarLayer = L.tileLayer(url, { 
+        attribution: `${selectedSite.name} Base Velocity`, 
         opacity: 1.0,
         maxZoom: 13,
         errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
@@ -525,7 +520,7 @@ document.getElementById('superBvBtn').onclick = () => {
     
     btn.classList.add('active');
     map.setView([selectedSite.lat, selectedSite.lon], 9);
-    showInfo('SUPER RESOLUTION velocity (0.5°) - Better rotation detection!');
+    showInfo('Base velocity - showing wind patterns');
     showColorLegend('velocity');
 };
 
