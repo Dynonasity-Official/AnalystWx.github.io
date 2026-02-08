@@ -2,161 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>AnalystWx</title>
+    <title>AnalystWx - Super Resolution</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; overflow: hidden; }
         #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
         .namePanel { position: fixed; top: 8px; left: 8px; padding: 20px; width: 130px; height: 25px; border-radius: 15px; background: linear-gradient(to bottom, #1E90FF, #ADD8E6); z-index: 1000; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
-        .panel { position: fixed; bottom: 5px; left: 540px; padding: 20px; width: 600px; height: 35px; border-radius: 15px; background: linear-gradient(to bottom, #1E90FF, #ADD8E6); z-index: 1000; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+        .panel { position: fixed; bottom: 5px; left: 410px; padding: 20px; width: 750px; height: 35px; border-radius: 15px; background: linear-gradient(to bottom, #1E90FF, #ADD8E6); z-index: 1000; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
         h2 { margin-top: 0; }
-        .blue-button { background-color: #1E90FF; color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; margin-top: 0px; }
+        .blue-button { background-color: #1E90FF; color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; margin-top: 0px; margin-right: 5px; font-size: 12px; }
         .blue-button:hover { background-color: #187bcd; }
         .blue-button.active { background-color: #0066cc; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); }
         .radar-marker:hover div { transform: scale(1.2); transition: transform 0.2s; }
+        .info-badge { position: fixed; top: 105px; right: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.95); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 1000; font-size: 11px; max-width: 250px; }
+        .info-badge strong { color: #1E90FF; }
     </style>
 </head>
 <body>
     <div id="map"></div>
 
     <div class="panel">
-        <button class="blue-button" id="compositeBtn">CompositeReflectivity</button>
-        <button class="blue-button" id="rainviewerBtn">RainViewer Radar</button>
+        <button class="blue-button" id="compositeBtn">Composite</button>
         <button class="blue-button" id="brBtn">Br</button>
         <button class="blue-button" id="bvBtn">Bv</button>
+        <button class="blue-button" id="superBrBtn">SR-Br</button>
+        <button class="blue-button" id="superBvBtn">SR-Bv</button>
     </div>
 
     <div class="namePanel">
         <h2>AnalystWX</h2>
     </div>
 
+    <div class="info-badge" id="infoBadge" style="display: none;">
+        <strong>Radar Info:</strong> <span id="infoText"></span>
+    </div>
+
+    <!-- Load Leaflet library FIRST -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const map = L.map('map', { minZoom: 2, maxZoom: 20 }).setView([37.0902, -95.7129], 4);
-
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri', maxZoom: 20, minZoom: 2 }).addTo(map);
-        const boundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', { attribution: '© CartoDB' }).addTo(map);
-
-        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
-            .then(res => res.json())
-            .then(data => { L.geoJSON(data, { style: { color: 'grey', weight: 2, fillOpacity: 0 } }).addTo(map); });
-
-        let radarLayer = null;
-        let siteRadarLayer = null;
-        let rainviewerLayer = null;
-        let selectedSite = null;
-        let selectedMarker = null;
-
-        const radarSites = [
-            { name: 'KABR', lat: 45.4558, lon: -98.4132, city: 'Aberdeen, SD' },
-            { name: 'KABX', lat: 35.1497, lon: -106.8239, city: 'Albuquerque, NM' },
-            { name: 'KAKQ', lat: 36.9840, lon: -77.0075, city: 'Norfolk, VA' },
-            { name: 'KAMA', lat: 35.2334, lon: -101.7092, city: 'Amarillo, TX' },
-            { name: 'KAMX', lat: 25.6111, lon: -80.4128, city: 'Miami, FL' }
-        ];
-
-        const radarIcon = L.divIcon({ className: 'radar-marker', html: `<div style="background-color: #36caff; width: 14px; height: 10px; border-radius: 40%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); cursor: pointer;"></div>`, iconSize: [16,16] });
-        const selectedRadarIcon = L.divIcon({ className: 'radar-marker-selected', html: `<div style="background-color: #36ff6a; width: 14px; height: 10px; border-radius: 40%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.7); cursor: pointer;"></div>`, iconSize: [20,20] });
-
-        radarSites.forEach(site => {
-            const marker = L.marker([site.lat, site.lon], { icon: radarIcon }).addTo(map);
-            marker.on('click', () => {
-                if (selectedMarker) selectedMarker.setIcon(radarIcon);
-                selectedSite = site;
-                selectedMarker = marker;
-                marker.setIcon(selectedRadarIcon);
-                updateSelectedSiteDisplay();
-            });
-            site.marker = marker;
-        });
-
-        function updateSelectedSiteDisplay() {
-            let display = document.getElementById('selectedSite');
-            if (!display) {
-                display = document.createElement('div');
-                display.id = 'selectedSite';
-                display.style.cssText = "position: fixed; top: 105px; left: 8px; padding: 10px 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 1000; font-size: 14px; font-weight: 600;";
-                document.body.appendChild(display);
-            }
-            display.innerHTML = selectedSite ? `<strong>Selected:</strong> ${selectedSite.name} - ${selectedSite.city}` : '';
-        }
-
-        function clearAllRadarLayers() {
-            if (radarLayer) { map.removeLayer(radarLayer); radarLayer = null; document.getElementById('compositeBtn').classList.remove('active'); }
-            if (siteRadarLayer) { map.removeLayer(siteRadarLayer); siteRadarLayer = null; document.getElementById('brBtn').classList.remove('active'); document.getElementById('bvBtn').classList.remove('active'); }
-            if (rainviewerLayer) { map.removeLayer(rainviewerLayer); rainviewerLayer = null; document.getElementById('rainviewerBtn').classList.remove('active'); }
-        }
-
-        // CompositeReflectivity
-        document.getElementById('compositeBtn').onclick = () => {
-            const btn = document.getElementById('compositeBtn');
-            if (radarLayer) { clearAllRadarLayers(); return; }
-            clearAllRadarLayers();
-            radarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?t=${Date.now()}`, { attribution: 'NEXRAD via Iowa Environmental Mesonet', opacity: 1 }).addTo(map);
-            btn.classList.add('active');
-        };
-
-        // Base Reflectivity
-        document.getElementById('brBtn').onclick = () => {
-            if (!selectedSite) return alert("Please click on a radar site first!");
-            const btn = document.getElementById('brBtn');
-            if (siteRadarLayer) { clearAllRadarLayers(); return; }
-            clearAllRadarLayers();
-            const radarCode = selectedSite.name.substring(1);
-            siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0Q-0-900913/{z}/{x}/{y}.png?t=${Date.now()}`, { attribution: `${selectedSite.name} Base Reflectivity`, opacity: 1 }).addTo(map);
-            btn.classList.add('active');
-            map.setView([selectedSite.lat, selectedSite.lon], 8);
-        };
-
-        // Base Velocity
-        document.getElementById('bvBtn').onclick = () => {
-            if (!selectedSite) return alert("Please click on a radar site first!");
-            const btn = document.getElementById('bvBtn');
-            if (siteRadarLayer) { clearAllRadarLayers(); return; }
-            clearAllRadarLayers();
-            const radarCode = selectedSite.name.substring(1);
-            siteRadarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${radarCode}-N0U-0-900913/{z}/{x}/{y}.png?t=${Date.now()}`, { attribution: `${selectedSite.name} Base Velocity`, opacity: 1 }).addTo(map);
-            btn.classList.add('active');
-            map.setView([selectedSite.lat, selectedSite.lon], 8);
-        };
-
-        // RainViewer
-        document.getElementById('rainviewerBtn').onclick = () => {
-            const btn = document.getElementById('rainviewerBtn');
-            if (rainviewerLayer) { clearAllRadarLayers(); return; }
-            clearAllRadarLayers();
-
-            fetch('https://api.rainviewer.com/public/weather-maps.json')
-            .then(res => res.json())
-            .then(json => {
-                // Use 'past' frames if available, otherwise 'nowcast'
-                const frames = (json.radar?.past?.length ? json.radar.past : json.radar?.nowcast?.frames) || [];
-                if (!frames.length) return alert("No radar frames available");
-
-                const latestFrame = frames[frames.length - 1]; // most recent frame
-                const ts = latestFrame.time;
-
-                // Use v3 tiles with proper path
-                const url = `https://tilecache.rainviewer.com/v3/radar/${ts}/{z}/{x}/{y}/2/1_1.png`;
-                rainviewerLayer = L.tileLayer(url, { opacity: 0.6, attribution: 'RainViewer' }).addTo(map);
-            btn.classList.add('active');
-        })
-        .catch(err => alert("Failed to load RainViewer: " + err));
-};
-
-
-        // Auto-refresh every 2 minutes
-        setInterval(() => {
-            if (radarLayer) document.getElementById('compositeBtn').click();
-            if (siteRadarLayer) {
-                const isBr = document.getElementById('brBtn').classList.contains('active');
-                const isBv = document.getElementById('bvBtn').classList.contains('active');
-                if (isBr) document.getElementById('brBtn').click();
-                if (isBv) document.getElementById('bvBtn').click();
-            }
-            if (rainviewerLayer) document.getElementById('rainviewerBtn').click();
-        }, 120000);
-    </script>
+    
+    <!-- Load your radar app SECOND (in separate file) -->
+    <script src="radar_app.js"></script>
 </body>
 </html>
