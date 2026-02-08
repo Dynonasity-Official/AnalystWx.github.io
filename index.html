@@ -17,6 +17,43 @@
         .radar-marker:hover div { transform: scale(1.2); transition: transform 0.2s; }
         .info-badge { position: fixed; top: 105px; right: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.95); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 1000; font-size: 11px; max-width: 250px; }
         .info-badge strong { color: #1E90FF; }
+        .color-legend { 
+            position: fixed; 
+            bottom: 70px; 
+            right: 8px; 
+            padding: 12px; 
+            background: rgba(255, 255, 255, 0.95); 
+            border-radius: 8px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
+            z-index: 1000; 
+            font-size: 11px;
+            min-width: 120px;
+        }
+        .legend-title { 
+            font-weight: 700; 
+            margin-bottom: 8px; 
+            color: #1E90FF;
+            font-size: 12px;
+        }
+        .legend-scale { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+        }
+        .legend-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        .legend-color { 
+            width: 30px; 
+            height: 16px; 
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+        .legend-label { 
+            font-size: 11px; 
+        }
     </style>
 </head>
 <body>
@@ -24,10 +61,8 @@
 
     <div class="panel">
         <button class="blue-button" id="compositeBtn">Composite</button>
-        <button class="blue-button" id="brBtn">Br</button>
-        <button class="blue-button" id="bvBtn">Bv</button>
-        <button class="blue-button" id="superBrBtn">SR-Br</button>
-        <button class="blue-button" id="superBvBtn">SR-Bv</button>
+        <button class="blue-button" id="superBrBtn">Reflectivity</button>
+        <button class="blue-button" id="superBvBtn">Velocity</button>
     </div>
 
     <div class="namePanel">
@@ -36,6 +71,12 @@
 
     <div class="info-badge" id="infoBadge" style="display: none;">
         <strong>Radar Info:</strong> <span id="infoText"></span>
+    </div>
+
+    <!-- Color table legend -->
+    <div class="color-legend" id="colorLegend" style="display: none;">
+        <div class="legend-title" id="legendTitle">Reflectivity (dBZ)</div>
+        <div class="legend-scale" id="legendScale"></div>
     </div>
 
     <!-- Load Leaflet library FIRST -->
